@@ -40,25 +40,53 @@ var ball = {
   },
   /**************DETECT COURT NET COLLISION********************/
   detect_court_net_collision: function(cn){
+	closestx = 0;	
+	closesty = 0;
+	coming_from_left = -1;
 
-    //if ( this.x  this.vx < 0 && (this.x - this.radius) < (cn.x + cn.width ) && this.x - cn.x < cn.width && (this.y + this.radius) > cn.y){ 
-    if (this.vx < 0 && (this.x - this.radius) > cn.x && this.x - cn.x < cn.width && (this.y + this.radius) > cn.y){
-      this.x = cn.x + cn.width + this.radius;
-      this.vx *= -1;
-      console.log('hit right side: ' + this.x);
-    }
-    //else if (this.vx > 0 && (this.x + this.radius) > cn.x && this.cn - this.x < this.radius && (this.y + this.radius) > cn.y){ 
-    else if ( this.vx > 0 && (this.x + this.radius) < (cn.x + cn.width) && this.cn - this.x < this.radius && (this.y + this.radius) > cn.y ){
-      this.x = cn.x - this.radius;
-      this.vx *= -1;
-      console.log('hit left side: ' + this.x);
-    }
-    else if (this.x > cn.x && this.x < (cn.x + cn.width) && (this.y + this.radius) == cn.y){
-      this.t = 0;
-      this.origin = cn.y - this.radius;
-      this.y = this.origin;
-      console.log('hit top');
-    }
+	// Fist we check if a collision happened
+	if (this.x < cn.x) {
+		closestx = cn.x;
+		coming_from_left = 1;	
+	} else if (this.x > (cn.x + cn.width)) {
+		closestx = cn.x + cn.width;
+		coming_from_left = 0;
+	} else {
+		closestx = this.x;
+		coming_from_left = -1;
+	}
+
+	if (this.y < cn.y) { 
+		closesty = cn.y;
+	} else if (this.y > (cn.y + cn.height)) {
+		closesty = cn.y + cn.height;
+	} else {
+		closesty = this.y;
+	}
+	
+	deltaxsq = (closestx - this.x) * (closestx - this.x);
+	deltaysq = (closesty - this.y) * (closesty - this.y);
+	collision_detected = ((deltaxsq + deltaysq) < (this.radius * this.radius)) ? 1 : 0;
+	
+	if (collision_detected) {
+
+		if (this.x > cn.x && this.x < (cn.x + cn.width) && ( (cn.y - this.y) > 0) ) {
+			this.t = 0;
+			this.origin = cn.y - this.radius;
+			this.y = this.origin;
+		
+		} else {
+			this.vx *= -1;
+
+			if (coming_from_left == 1) {
+				this.x = cn.x - this.radius;
+			}
+
+			if (coming_from_left == 0) {
+				this.x = cn.x + cn.width + this.radius;
+			}
+		}
+	}
   }
 };
   var player = {
@@ -132,9 +160,9 @@ var ai = {
     ctx.fill();
   },
   update:function(){
-    if (ball.x < court_net.x){
+	if (ball.x < court_net.x){
       if (this.x < ball.x && (this.radius + this.x < court_net.x)){
-        this.vx = 6;
+      	this.vx = 6;
         this.x += this.vx;
       }
       else if (this.x > ball.x && (this.x - this.radius) > 0){
@@ -142,7 +170,7 @@ var ai = {
         this.x += this.vx;
       }
       else{
-        //this.vx = 0;
+        this.vx = 0;
       }
     }
     else {
@@ -157,7 +185,7 @@ var ai = {
 var court_net = {
   x: 400,
   y: 380,
-  width: 50,
+  width: 75,
   height: 120,
   color: '#34495E',
   draw: function(){
@@ -261,6 +289,7 @@ function draw() {
     court_net.draw();
     gameover = true;
   }
+
   /**************DID BALL HIT GROUND********************/
 
   if (gameover){
@@ -303,7 +332,6 @@ function keyUp(e) {
     up = false;
   }
 }
-
 
 
 begin();
