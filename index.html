@@ -11,14 +11,32 @@
 			}
 			canvas {
 				border-style: solid;
-				border-color: red;
+				border-color: #dedef8;
 				border-width: 2px;
 			}
 		</style>
 	</head>
 	<body>
 		<h1 text-align="center">Slime Volley Ball</h1>
-		<canvas id="canvas" width="900" height="500"></canvas>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-6">
+					<canvas id="canvas" width="900" height="500"></canvas>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-offset-4 col-md-5" style="background-color: #dedef8;box-shadow: inset 1px -1px 1px #444, inset -1px 1px 1px #444;">
+					<h3>How do you play?</h3>
+					<ul>
+						<li>Your the right slime.</li>
+						<li>Hold left arrow key to move left.</li>
+						<li>Hold right arrow key to move right.</li>
+						<li>Hold up arrow key to jump.</li>
+					</ul>
+				</div>
+				<div class="col-md-3"></div>
+			</div>
+		</div>	
 		<script type="text/javascript" src="slime_volleyball.js"></script>
 	</body>
 </html>
