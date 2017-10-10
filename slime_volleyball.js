@@ -161,7 +161,7 @@ var ai = {
   },
   update:function(){
 	if (ball.x < court_net.x){
-      if (this.x < ball.x && (this.radius + this.x < court_net.x)){
+      if (this.x < ball.x && ((this.radius + this.x) < court_net.x)){
       	this.vx = 6;
         this.x += this.vx;
       }
@@ -169,8 +169,8 @@ var ai = {
         this.vx = -6;
         this.x += this.vx;
       }
-      else{
-        this.vx = 0;
+      else if ((this.x - this.radius) > 0 && ((this.radius + this.x) < court_net.x)){ 
+        this.x += this.vx;
       }
     }
     else {
