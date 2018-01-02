@@ -7,6 +7,14 @@ var g = 3;
 var t, dt = 0.2;
 var time = 0, newTime;
 var gameover;
+const MAX_ACC_X = 3;
+const MAX_ACC_Y = 3;
+const MAX_VEL_X = 6;
+const MAX_VEL_Y = 30;
+const MAX_VEL = {x:MAX_VEL_X, y:MAX_VEL_Y};
+const MAX_ACC = {x:MAX_ACC_X, y:MAX_ACC_Y};
+const SLOWING_RAD = 50;
+
 
 /**************DETECT SLIME COLLISION********************/
 function detect_collision(ball, slime){
@@ -26,7 +34,7 @@ var ball = {
   y: 100,
   vx: 5,
   vy: -30,
-  radius: 25,
+  radius: 15,
   t: 0,
   mass: 1,
   color: '#8E44AD',
@@ -94,7 +102,7 @@ var ball = {
   y: canvas.height,
   vx: 0,
   vy: 0,
-  radius: 75,
+  radius: 50,
   mass: 3,
   color: '#2980B9',
   t: 0,
@@ -135,23 +143,28 @@ var ball = {
     else if (up && this.y == canvas.height){
       jumped = true;
       this.t = 0;
-      this.vy = -20;
+      this.vy = -25;
     }
 
   }
 };
 
 /**************AI********************/
+const GROUNDED = 0;
+const AIRBOURNE = 1;
 
 var ai = {
   x: 300,
   y: canvas.height,
   vx: 0,
   vy: 0,
-  radius: 75,
+  vel_goal: {x:0,y:0},
+  vel: {x:0,y:0},
+  radius: 50,
   mass: 3,
   color: '#E74C3C',
   t: 0,
+  state: GROUNDED, 
   draw: function(){
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI, true);
@@ -159,9 +172,37 @@ var ai = {
     ctx.fillStyle = this.color;
     ctx.fill();
   },
+
   update:function(){
-	if (ball.x < court_net.x){
-      if (this.x < ball.x && ((this.radius + this.x) < court_net.x)){
+	if (ball.x < court_net.x){  
+		
+		var dist = getDist(this, ball);
+		if (dist < SLOWING_RAD) {
+				this.vel_goal = { x:((ball.x-this.x)/dist)*MAX_VEL_X*(dist/SLOWING_RAD), y:((ball.y-this.y)/dist)*MAX_VEL_Y*(dist/SLOWING_RAD) };
+		} else {
+			this.vel_goal = { x:((ball.x-this.x)/dist)*MAX_VEL_X, y:((ball.y-this.y)/dist)*MAX_VEL_Y };
+		}
+		var steering_acceleration = {x:this.vel_goal.x-this.vel.x, y:this.vel_goal.y-this.vel.y};
+		steering_acceleration = truncate(steering_acceleration, MAX_ACC);
+		this.vel.x += steering_acceleration.x;
+		if ((this.state == GROUNDED) && (ball.vx < 0)) {
+			this.vel.y += steering_acceleration.y;
+			this.state = AIRBOURNE;
+			this.t = 0;
+			this.vel = truncate(this.vel, MAX_VEL, true);
+			//this.vel.y = -30;
+		} else {
+			this.vel = truncate(this.vel, MAX_VEL, false);
+		}
+		this.x += this.vel.x;
+		
+		if ((this.radius + this.x) > court_net.x){
+			this.x = court_net.x - this.radius;
+		} else if ((this.x - this.radius) < 0) {
+			this.x = this.radius;
+		} 
+
+	/*if (this.x < ball.x && ((this.radius + this.x) < court_net.x)){
       	this.vx = 6;
         this.x += this.vx;
       }
@@ -171,12 +212,22 @@ var ai = {
       }
       else if ((this.x - this.radius) > 0 && ((this.radius + this.x) < court_net.x)){ 
         this.x += this.vx;
-      }
-    }
+      }*/
+    
+	}
     else {
-      this.vx = 0;
+      //this.vx = 0;
     }
-
+	if (this.state == AIRBOURNE) {
+		if (this.y > canvas.height) {
+			this.y = canvas.height;
+			this.state = GROUNDED;
+			this.vel.y = 0;
+		} else {
+			this.y = 0.5 * g * this.t * this.t + this.vel.y*this.t +canvas.height;
+		}
+	}
+	console.log(this.vel.y);
   }
 };
 
@@ -226,6 +277,7 @@ function draw() {
   ball.y = 0.5 * ball.t * ball.t * g + ball.vy * ball.t + ball.origin;
   player.t += dt;
   player.update();
+  ai.t += dt;
   ai.update();
   collided = false;
   ai_collided = false;
@@ -254,7 +306,7 @@ function draw() {
   else if(ai_collided){
     ball.t = 0;
     no_prev_colloid = true;
-    ball.vx = (((ball.mass - ai.mass) * ball.vx) + (2 * ai.mass * ai.vx)) / (ai.mass + ball.mass);
+    ball.vx = (((ball.mass - ai.mass) * ball.vx) + (2 * ai.mass * ai.vel.x)) / (ai.mass + ball.mass);
     theta = Math.atan((ai.y - ball.y) / (ai.x - ball.x));
     ball.y = ai.y - (ai.radius + ball.radius) * Math.sin(Math.abs(theta));
     if (theta < 0){ // left quad
@@ -333,5 +385,28 @@ function keyUp(e) {
   }
 }
 
+function getDist(a, b) {
+	return Math.sqrt( ((a.x-b.x)*(a.x-b.x)) + ((a.y-b.y)*(a.y-b.y)) )
+}
+
+function truncate(obj, lim, opt) {
+	if ( Math.abs(obj) > lim.x ) {
+		if (obj < 0) {
+			obj = -lim.x;
+		} else {
+			obj = lim.x
+		}
+	}
+	if (opt) {
+		if (Math.abs(obj.y) > lim.y) {
+			if (obj.y < 0) {
+				obj.y = -lim.y;
+			} else {
+				obj.y = lim.y;
+			}
+		}
+	}
+	return obj;
+}
 
 begin();
