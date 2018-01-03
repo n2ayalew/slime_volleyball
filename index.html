@@ -17,15 +17,33 @@
 		</style>
 	</head>
 	<body>
-		<h1 text-align="center">Slime Volley Ball</h1>
-		<div class="container">
-			<div class="row">
-				<div class="col-md-6">
-					<canvas id="canvas" width="900" height="500"></canvas>
+		<div class="container-fluid">
+			<div class=row>
+				<div class="col-md-8 col-md-offset-4" text-align="center">		
+					<h1 text-align="center">Slime Volley Ball</h1>
 				</div>
 			</div>
 			<div class="row">
-				<div class="col-md-offset-4 col-md-5" style="background-color: #dedef8;box-shadow: inset 1px -1px 1px #444, inset -1px 1px 1px #444;">
+				<div class="col-md-8">
+					<canvas id="canvas" width="900" height="500"></canvas>
+				</div>
+				<div class="col-md-4">
+					<button type="button" class="btn btn-default btn-block well well-sm" style="background-color:lavender;" id="btn_reset_score">Reset Score</button>
+					<table class="table well well-sm" style="background-color:lavender;">
+						<thead>
+						<tr>
+							<th>Opponent</th>
+							<th>You</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr>
+							<td id="ai_score">0</td>
+							<td id="player_score">0</td>
+						</tr>
+						</tbody>
+					</table>
+					<div style="background-color:lavender; padding-top:0px" class="well well-sm">
 					<h3>How do you play?</h3>
 					<ul>
 						<li>Your the right slime.</li>
@@ -34,7 +52,7 @@
 						<li>Hold up arrow key to jump.</li>
 					</ul>
 				</div>
-				<div class="col-md-3"></div>
+				</div>
 			</div>
 		</div>	
 		<script type="text/javascript" src="slime_volleyball.js"></script>

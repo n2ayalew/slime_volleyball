@@ -7,6 +7,10 @@ var g = 3;
 var t, dt = 0.2;
 var time = 0, newTime;
 var gameover;
+var player_score = document.getElementById("player_score");
+var ai_score = document.getElementById("ai_score");
+var reset_score_btn = document.getElementById("btn_reset_score");
+
 const MAX_ACC_X = 3;
 const MAX_ACC_Y = 3;
 const MAX_VEL_X = 6;
@@ -14,7 +18,7 @@ const MAX_VEL_Y = 30;
 const MAX_VEL = {x:MAX_VEL_X, y:MAX_VEL_Y};
 const MAX_ACC = {x:MAX_ACC_X, y:MAX_ACC_Y};
 const SLOWING_RAD = 50;
-
+const HALF_COURT = canvas.width/2;
 
 /**************DETECT SLIME COLLISION********************/
 function detect_collision(ball, slime){
@@ -32,7 +36,8 @@ function detect_collision(ball, slime){
 var ball = {
   x: 100,
   y: 100,
-  vx: 5,
+ // vx: 5,
+  vx: 0,
   vy: -30,
   radius: 15,
   t: 0,
@@ -97,15 +102,18 @@ var ball = {
 	}
   }
 };
+
   var player = {
   x: 600,
   y: canvas.height,
   vx: 0,
   vy: 0,
+  vel: {x:0,y:0},
   radius: 50,
   mass: 3,
   color: '#2980B9',
   t: 0,
+  score: 0,
   draw: function() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI, true);
@@ -116,37 +124,39 @@ var ball = {
   update: function(){
     
   	if (right && this.x < canvas.width - this.radius){
-  		this.vx = 6;
-  		this.x += this.vx;
+  		this.vel.x = 6;
+  		this.x += this.vel.x;
   	}
 
   	else if (left && (this.x - this.radius) > (court_net.x + court_net.width)){
-  		this.vx = -6;
-  		this.x += this.vx;
+  		this.vel.x = -6;
+  		this.x += this.vel.x;
   	}
 
   	else{
-      this.vx = 0; 
+      this.vel.x = 0; 
     }
 
     if ( this.y > canvas.height && jumped){
       jumped = 0;
       this.y = canvas.height;
-      this.vy =0;
+      this.vel.y =0;
       this.t = 0;
     }
 
     else if ( this.y <= canvas.height && jumped){
-      this.y = 0.5 * g * this.t * this.t + this.vy*this.t +canvas.height;
+      this.y = 0.5 * g * this.t * this.t + this.vel.y*this.t +canvas.height;
     }
 
     else if (up && this.y == canvas.height){
       jumped = true;
       this.t = 0;
-      this.vy = -25;
+      this.vel.y = -25;
     }
-
-  }
+  },
+	getVelocity: function(){
+  		return this.vel.y + g*this.t;
+	}
 };
 
 /**************AI********************/
@@ -164,6 +174,7 @@ var ai = {
   mass: 3,
   color: '#E74C3C',
   t: 0,
+  score: 0,
   state: GROUNDED, 
   draw: function(){
     ctx.beginPath();
@@ -202,22 +213,8 @@ var ai = {
 			this.x = this.radius;
 		} 
 
-	/*if (this.x < ball.x && ((this.radius + this.x) < court_net.x)){
-      	this.vx = 6;
-        this.x += this.vx;
-      }
-      else if (this.x > ball.x && (this.x - this.radius) > 0){
-        this.vx = -6;
-        this.x += this.vx;
-      }
-      else if ((this.x - this.radius) > 0 && ((this.radius + this.x) < court_net.x)){ 
-        this.x += this.vx;
-      }*/
-    
+   
 	}
-    else {
-      //this.vx = 0;
-    }
 	if (this.state == AIRBOURNE) {
 		if (this.y > canvas.height) {
 			this.y = canvas.height;
@@ -227,17 +224,19 @@ var ai = {
 			this.y = 0.5 * g * this.t * this.t + this.vel.y*this.t +canvas.height;
 		}
 	}
-	console.log(this.vel.y);
+  },
+  getVelocity: function(){
+  	return this.vel.y + g*this.t;
   }
 };
 
 /**************COURT NET********************/
 
 var court_net = {
-  x: 400,
-  y: 380,
-  width: 75,
+  width: 60,
   height: 120,
+  x: 420,
+  y: 380,
   color: '#34495E',
   draw: function(){
     ctx.beginPath();
@@ -248,21 +247,21 @@ var court_net = {
 };
 
 function begin(){
-  gameover = false;
-  player.x = 600;
-  player.y = canvas.height;
-  player.t = 0;
-  player.vx = 0;
-  player.vy = 0;
+	gameover = false;
+	player.x = 600;
+	player.y = canvas.height;
+	player.t = 0;
+	player.vel.x = 0;
+	player.vel.y = 0;
 
-  ball.origin = canvas.height - ball.radius;
-  ball.t = 0;
-  ball.x = player.x;
-  ball.y = player.y + player.radius + ball.radius;
-  ball.t = 0;
-
-
+	ball.t = 0;
+	ball.x = player.x;
+	ball.y = player.y - player.radius - (ball.radius);
+	ball.origin = ball.y;
+	ball.t = 0;
+	ball.vx = 0;
 }
+
 function draw() {
   /**************UPDATE GRAPHICS********************/
   ctx.clearRect(0,0, canvas.width, canvas.height);
@@ -290,7 +289,7 @@ function draw() {
   if (collided){
   	ball.t = 0;
   	no_prev_colloid = true;
-  	ball.vx = (((ball.mass - player.mass) * ball.vx) + (2 * player.mass * player.vx)) / (player.mass + ball.mass);
+  	ball.vx = (((ball.mass - player.mass) * ball.vx) + (2 * player.mass * player.vel.x)) / (player.mass + ball.mass);
     theta = Math.atan((player.y - ball.y) / (player.x - ball.x));
     ball.y = player.y - (player.radius + ball.radius) * Math.sin(Math.abs(theta));
     if (theta < 0){ // left quad
@@ -344,15 +343,29 @@ function draw() {
 
   /**************DID BALL HIT GROUND********************/
 
-  if (gameover){
-    window.cancelAnimationFrame(raf);
-    begin();
+	if (gameover){
+		if (ball.x > HALF_COURT) {
+			ai.score+=1;
+			ai_score.innerHTML = ai.score;
+		} else {
+			player.score +=1;
+			player_score.innerHTML = player.score;
+		}
+		window.cancelAnimationFrame(raf);
+		begin();
   }
   raf = window.requestAnimationFrame(draw);
 }
+
 document.addEventListener("keydown", keyDown, false);
 document.addEventListener("keyup", keyUp, false);
 
+reset_score_btn.addEventListener("click", function(e){
+	player.score = 0;
+	ai.score = 0;
+	ai_score.innerHTML = ai.score;
+	player_score.innerHTML = player.score;
+});
 canvas.addEventListener('mouseover', function(e) {
   raf = window.requestAnimationFrame(draw);
 });
@@ -408,5 +421,13 @@ function truncate(obj, lim, opt) {
 	}
 	return obj;
 }
-
+/**
+ * Collision is completly elastic i.e., both momentum and kinetic energy
+ * are fully conserved.
+ */
+function analyisCollision(a, b) {
+    vx = (((a.mass - b.mass) * a.vx) + (2 * b.mass * b.vel.x)) / (b.mass + a.mass);
+    vy = (((a.mass - b.mass) * a.vy) + (2 * b.mass * b.vel.y)) / (b.mass + a.mass);
+	return {x: vx, y: vy};
+}
 begin();
